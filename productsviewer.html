@@ -1,12 +1,262 @@
-<html>
-    <head>
-        <title> view Products</title>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-       
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    </head>
-    <body>
-        <h1>Products</h1>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Airsoft Ireland's Products Database</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+  <!-- Bootstrap core CSS -->
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<script>
+function showCreate(){
+    document.getElementById('showCreateButton').style.display="none"
+    document.getElementById('productsTable').style.display="none"
+    document.getElementById('createUpdateForm').style.display="block"
+
+    document.getElementById('createLabel').style.display="inline"
+    document.getElementById('updateLabel').style.display="none"
+
+    document.getElementById('doCreateButton').style.display="block"
+    document.getElementById('doUpdateButton').style.display="none"
+
+}
+function showViewAll(){
+    document.getElementById('showCreateButton').style.display="block"
+    document.getElementById('productsTable').style.display="block"
+    document.getElementById('createUpdateForm').style.display="none"
+}
+function showUpdate(buttonElement){
+    document.getElementById('showCreateButton').style.display="none"
+    document.getElementById('productsTable').style.display="none"
+    document.getElementById('createUpdateForm').style.display="block"
+
+    document.getElementById('createLabel').style.display="none"
+    document.getElementById('updateLabel').style.display="inline"
+
+    document.getElementById('doCreateButton').style.display="none"
+    document.getElementById('doUpdateButton').style.display="block"
+
+
+    var rowElement = buttonElement.parentNode.parentNode
+    // these is a way of finding the closest <tr> which would safer, closest()
+
+    var product = getProductFromRow(rowElement)
+    populateFormWithProduct(product)
+}
+function doCreate(){
+    var form = document.getElementById('createUpdateForm')
+
+    var product = {}
+
+    product.Product = form.querySelector('input[name="Product"]').value
+    product.Model = form.querySelector('input[name="Model"]').value
+    product.Price = form.querySelector('input[name="Price"]').value
+    console.log(JSON.stringify(product))
+    createProductAjax(product)
+
+
+}
+function doUpdate(){
+    var product = getProductFromForm();
+    var rowElement = document.getElementById(product.id);
+    updateProductAjax(product);
+    setProductInRow(rowElement,product);
+
+    clearForm();
+    showViewAll();
+}
+function doDelete(r){
+    var tableElement = document.getElementById('productsTable');
+    var rowElement = r.parentNode.parentNode;
+    var index = rowElement.rowIndex;
+    deleteProductAjax(rowElement.getAttribute("id"));
+    tableElement.deleteRow(index);
+}
+function addProductToTable(product){
+    var tableElement = document.getElementById('productsTable')
+    var rowElement = tableElement.insertRow(-1)
+    rowElement.setAttribute('id',product.id)
+    var cell1 = rowElement.insertCell(0);
+    cell1.innerHTML = product.id
+    var cell2 = rowElement.insertCell(1);
+    cell2.innerHTML = product.Product
+    var cell3 = rowElement.insertCell(2);
+    cell3.innerHTML = product.Model
+    var cell4 = rowElement.insertCell(3);
+    cell4.innerHTML = product.Price
+    var cell5 = rowElement.insertCell(4);
+    cell5.innerHTML = '<button onclick="showUpdate(this)">Update</button>'
+    var cell6 = rowElement.insertCell(5);
+    cell6.innerHTML = '<button onclick=doDelete(this)>delete</button>'
+
+}
+
+function clearForm(){
+    var form = document.getElementById('createUpdateForm')
+
+    form.querySelector('input[name="Product"]').value=''
+    form.querySelector('input[name="Model"]').value=''
+    form.querySelector('input[name="Price"]').value=''
+}
+function getProductFromRow(rowElement){
+    var product ={}
+    product.id  = rowElement.getAttribute('id')
+    product.Product = rowElement.cells[1].firstChild.textContent
+    product.Model = rowElement.cells[2].firstChild.textContent
+    product.Price = parseInt(rowElement.cells[3].firstChild.textContent,10)
+    return product
+}
+function setProductInRow(rowElement, product){
+    rowElement.cells[0].firstChild.textContent= product.id  
+    rowElement.cells[1].firstChild.textContent= product.Product 
+    rowElement.cells[2].firstChild.textContent= product.Model
+    rowElement.cells[3].firstChild.textContent= product.Price
+}
+function populateFormWithProduct(product){
+    var form = document.getElementById('createUpdateForm')
+    form.querySelector('input[name="id"]').disabled = true
+
+    form.querySelector('input[name="id"]').value  = product.id
+    form.querySelector('input[name="Product"]').value= product.Product
+    form.querySelector('input[name="Model"]').value= product.Model
+    form.querySelector('input[name="Price"]').value= product.Price
+    return product
+}
+function getProductFromForm(){
+    var form = document.getElementById('createUpdateForm')
+    var product = {}
+    product.id = form.querySelector('input[name="id"]').value
+    product.Product = form.querySelector('input[name="Product"]').value
+    product.Model = form.querySelector('input[name="Model"]').value
+    product.Price = parseInt(form.querySelector('input[name="Price"]').value,10)
+    console.log(JSON.stringify(product))
+    return product
+}
+function getAllAjax(){
+    host = window.location.origin
+    $.ajax({
+        "url": host+"/products",
+        "method":"GET",
+        "data":"",
+        "dataType": "JSON",
+        "success":function(result){
+            //console.log(result);
+            for (product of result){
+                addProductToTable(product);
+            }
+
+        },
+        "error":function(xhr,status,error){
+            console.log("error: "+status+" msg:"+error);
+        }
+    });
+
+}
+function createProductAjax(product){
+    host = window.location.origin
+    console.log(JSON.stringify(product));
+    $.ajax({
+        "url": host +"/products",
+        "method":"POST",
+        "data":JSON.stringify(product),
+        "dataType": "JSON",
+        contentType: "application/json; charset=utf-8",
+        "success":function(result){
+            //console.log(result);
+            product.id = result.id
+            addProductToTable(product)
+            clearForm()
+            showViewAll()
+        },
+        "error":function(xhr,status,error){
+            console.log("error: "+status+" msg:"+error);
+        }
+    });
+}
+function updateProductAjax(product){
+    host = window.location.origin
+     console.log(JSON.stringify(product));
+    $.ajax({
+        "url": host +"/products/"+encodeURI(product.id),
+        "method":"PUT",
+        "data":JSON.stringify(product),
+        "dataType": "JSON",
+        contentType: "application/json; charset=utf-8",
+        "success":function(result){
+           // console.log(result);
+
+        },
+        "error":function(xhr,status,error){
+            console.log("error: "+status+" msg:"+error);
+        }
+    });
+}
+function deleteProductAjax(id){
+    host = window.location.origin
+    $.ajax({
+        "url": host +"/products/"+encodeURI(id),
+        "method":"DELETE",
+        "data":"",
+        "dataType": "JSON",
+        contentType: "application/json; charset=utf-8",
+        "success":function(result){
+            //console.log(result);
+
+        },
+        "error":function(xhr,status,error){
+            console.log("error: "+status+" msg:"+error);
+        }
+    });
+}
+getAllAjax();
+</script>
+
+<body>
+
+  <!-- Navigation bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">Airsoft Ireland</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="index.html">Home
+              <span class="sr-only">(current)</span>
+            </a>
+			  <!-- Navigation bar links to pages -->
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="login.html">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="store.html">Our Store</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+	  <!-- Code for page layout -->
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12 text-center">
+        <h1 class="mt-5">Airsoft Ireland's Products Database</h1>
+		<br>
+			  <!-- Logo image and paragraph -->
+		<img src="images/logo.jpg" alt="Logo" title="Airsoft Ireland" width="200" height="150">
+        <br>
+        
         <div> <button id="showCreateButton" onclick="showCreate()">Create</button></div>
         <div>
             <table class="table" id="productsTable">
@@ -20,7 +270,7 @@
                         <th>Update</th>
                         <th>Delete</th>
                 </tr>
-                
+            
             </table>
         </div>
         <div id='createUpdateForm' style="display: none">
@@ -32,211 +282,22 @@
                 <span><button id="doCreateButton" onclick="doCreate()">Create</button></span>
                 <span><button id="doUpdateButton" onclick="doUpdate()">Update</button></span>
         </div>
-    </body>
-    <script>
-    function showCreate(){
-        document.getElementById('showCreateButton').style.display="none"
-        document.getElementById('productsTable').style.display="none"
-        document.getElementById('createUpdateForm').style.display="block"
 
-        document.getElementById('createLabel').style.display="inline"
-        document.getElementById('updateLabel').style.display="none"
+		<br>
+		<p>Don't forget to follow us on Instagram, and if you have any questions shoot us a message by email, or if you wanna check it out our store, just click on the Google Maps icon for the location!</p>
+			  <!-- Images linking to Instagram, Mail and Maps -->
+		<a href="https://www.google.com/maps?ll=51.877009,-8.435638&z=16&t=m&hl=pt-BR&gl=IE&mapclient=embed&q=4+Douglas+E+Douglas+Cork" target="_blank"><img src="images/maps.png" width="82" height="86" title="Location"></a>
+		<a href="https://www.instagram.com/airsoft.ireland/" target="_blank"><img src="images/instagram.png" width="117" height="117" title="Instagram"></a>
+		<a href="mailto:contact@airsoftireland.com"><img src="images/email.png" width="82" height="86" title="Email"></a>
+		
+      </div>
+    </div>
+  </div>
 
-        document.getElementById('doCreateButton').style.display="block"
-        document.getElementById('doUpdateButton').style.display="none"
+  <!-- Bootstrap core JavaScript -->
+  <script src="vendor/jquery/jquery.slim.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 
-    }
-    function showViewAll(){
-        document.getElementById('showCreateButton').style.display="block"
-        document.getElementById('productsTable').style.display="block"
-        document.getElementById('createUpdateForm').style.display="none"
-    }
-    function showUpdate(buttonElement){
-        document.getElementById('showCreateButton').style.display="none"
-        document.getElementById('productsTable').style.display="none"
-        document.getElementById('createUpdateForm').style.display="block"
-
-        document.getElementById('createLabel').style.display="none"
-        document.getElementById('updateLabel').style.display="inline"
-
-        document.getElementById('doCreateButton').style.display="none"
-        document.getElementById('doUpdateButton').style.display="block"
-
-
-        var rowElement = buttonElement.parentNode.parentNode
-        // these is a way of finding the closest <tr> which would safer, closest()
-        
-        var product = getProductFromRow(rowElement)
-        populateFormWithProduct(product)
-    }
-    function doCreate(){
-        var form = document.getElementById('createUpdateForm')
-
-        var product = {}
-       
-        product.Product = form.querySelector('input[name="Product"]').value
-        product.Model = form.querySelector('input[name="Model"]').value
-        product.Price = form.querySelector('input[name="Price"]').value
-        console.log(JSON.stringify(product))
-        createProductAjax(product)
-        
-        
-    }
-    function doUpdate(){
-        var product = getProductFromForm();
-        var rowElement = document.getElementById(product.id);
-        updateProductAjax(product);
-        setProductInRow(rowElement,product);
-       
-        clearForm();
-        showViewAll();
-    }
-    function doDelete(r){
-        var tableElement = document.getElementById('productsTable');
-        var rowElement = r.parentNode.parentNode;
-        var index = rowElement.rowIndex;
-        deleteProductAjax(rowElement.getAttribute("id"));
-        tableElement.deleteRow(index);
-    }
-    function addProductToTable(product){
-        var tableElement = document.getElementById('productsTable')
-        var rowElement = tableElement.insertRow(-1)
-        rowElement.setAttribute('id',product.id)
-        var cell1 = rowElement.insertCell(0);
-        cell1.innerHTML = product.id
-        var cell2 = rowElement.insertCell(1);
-        cell2.innerHTML = product.Product
-        var cell3 = rowElement.insertCell(2);
-        cell3.innerHTML = product.Model
-        var cell4 = rowElement.insertCell(3);
-        cell4.innerHTML = product.Price
-        var cell5 = rowElement.insertCell(4);
-        cell5.innerHTML = '<button onclick="showUpdate(this)">Update</button>'
-        var cell6 = rowElement.insertCell(5);
-        cell6.innerHTML = '<button onclick=doDelete(this)>delete</button>'
-
-    }
-
-    function clearForm(){
-        var form = document.getElementById('createUpdateForm')
-
-        form.querySelector('input[name="Product"]').value=''
-        form.querySelector('input[name="Model"]').value=''
-        form.querySelector('input[name="Price"]').value=''
-    }
-    function getProductFromRow(rowElement){
-        var product ={}
-        product.id  = rowElement.getAttribute('id')
-        product.Product = rowElement.cells[1].firstChild.textContent
-        product.Model = rowElement.cells[2].firstChild.textContent
-        product.Price = parseInt(rowElement.cells[3].firstChild.textContent,10)
-        return product
-    }
-    function setProductInRow(rowElement, product){
-        rowElement.cells[0].firstChild.textContent= product.id  
-        rowElement.cells[1].firstChild.textContent= product.Product 
-        rowElement.cells[2].firstChild.textContent= product.Model
-        rowElement.cells[3].firstChild.textContent= product.Price
-    }
-    function populateFormWithProduct(product){
-        var form = document.getElementById('createUpdateForm')
-        form.querySelector('input[name="id"]').disabled = true
-
-        form.querySelector('input[name="id"]').value  = product.id
-        form.querySelector('input[name="Product"]').value= product.Product
-        form.querySelector('input[name="Model"]').value= product.Model
-        form.querySelector('input[name="Price"]').value= product.Price
-        return product
-    }
-    function getProductFromForm(){
-        var form = document.getElementById('createUpdateForm')
-        var product = {}
-        product.id = form.querySelector('input[name="id"]').value
-        product.Product = form.querySelector('input[name="Product"]').value
-        product.Model = form.querySelector('input[name="Model"]').value
-        product.Price = parseInt(form.querySelector('input[name="Price"]').value,10)
-        console.log(JSON.stringify(product))
-        return product
-    }
-    function getAllAjax(){
-        host = window.location.origin
-        $.ajax({
-            "url": host+"/products",
-            "method":"GET",
-            "data":"",
-            "dataType": "JSON",
-            "success":function(result){
-                //console.log(result);
-                for (product of result){
-                    addProductToTable(product);
-                }
-                
-            },
-            "error":function(xhr,status,error){
-                console.log("error: "+status+" msg:"+error);
-            }
-        });
-
-    }
-    function createProductAjax(product){
-        host = window.location.origin
-        console.log(JSON.stringify(product));
-        $.ajax({
-            "url": host +"/products",
-            "method":"POST",
-            "data":JSON.stringify(product),
-            "dataType": "JSON",
-            contentType: "application/json; charset=utf-8",
-            "success":function(result){
-                //console.log(result);
-                product.id = result.id
-                addProductToTable(product)
-                clearForm()
-                showViewAll()
-            },
-            "error":function(xhr,status,error){
-                console.log("error: "+status+" msg:"+error);
-            }
-        });
-    }
-    function updateProductAjax(product){
-        host = window.location.origin
-         console.log(JSON.stringify(product));
-        $.ajax({
-            "url": host +"/products/"+encodeURI(product.id),
-            "method":"PUT",
-            "data":JSON.stringify(product),
-            "dataType": "JSON",
-            contentType: "application/json; charset=utf-8",
-            "success":function(result){
-               // console.log(result);
-                  
-            },
-            "error":function(xhr,status,error){
-                console.log("error: "+status+" msg:"+error);
-            }
-        });
-    }
-    function deleteProductAjax(id){
-        host = window.location.origin
-        $.ajax({
-            "url": host +"/products/"+encodeURI(id),
-            "method":"DELETE",
-            "data":"",
-            "dataType": "JSON",
-            contentType: "application/json; charset=utf-8",
-            "success":function(result){
-                //console.log(result);
-                
-            },
-            "error":function(xhr,status,error){
-                console.log("error: "+status+" msg:"+error);
-            }
-        });
-    }
-    getAllAjax();
-  
-
-    
-    </script>
+</body>
 </html>
