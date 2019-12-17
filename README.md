@@ -4,7 +4,7 @@
 
 ### Description & Instructions
 
- - The objective of this project was to build a Web application with Flask Server that has REST API and using AJAX calls to communicate with a MySQL Database
+The objective of this project was to build a Web application with Flask Server that has REST API and using AJAX calls to communicate with a MySQL Database
 
 
 1. In order to access the Web application open you browser and go to: http://strokk.pythonanywhere.com/index.html
